@@ -1,35 +1,42 @@
-import os
-import pytest
-import json
-from app import load_data, save_data, create_user, update_user, delete_user
 
-@pytest.fixture
-def setup_data():
-    test_data = [{"name": "Test User", "email": "test@example.com"}]
-    save_data(test_data)
-    yield
-    if os.path.exists("registrations.json"):
-        os.remove("registrations.json")
+import unittest
+from app import create_user, read_users, update_user, delete_user, close_connection
 
-def test_create_user(setup_data):
-    create_user("New User", "newuser@example.com")
-    data = load_data()
-    assert len(data) == 2
-    assert data[-1]['name'] == "New User"
+class TestCRUD(unittest.TestCase):
 
-def test_update_user(setup_data):
-    update_user("test@example.com", "Updated User", "updated@example.com")
-    data = load_data()
-    assert len(data) == 1
-    assert data[0]['name'] == "Updated User"
-    assert data[0]['email'] == "updated@example.com"
+    def setUp(self):
+        # Membersihkan semua data sebelum setiap tes
+        users = read_users()
+        for user in users:
+            delete_user(user[0])
 
-def test_delete_user(setup_data):
-    delete_user("test@example.com")
-    data = load_data()
-    assert len(data) == 0
+    def test_create_user(self):
+        create_user("John", 25)
+        users = read_users()
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0][1], "John")
+        self.assertEqual(users[0][2], 25)
 
-def test_read_users(setup_data):
-    data = load_data()
-    assert len(data) == 1
-    assert data[0]['name'] == "Test User"
+    def test_update_user(self):
+        create_user("Jane", 28)
+        users = read_users()
+        user_id = users[0][0]
+        update_user(user_id, "Jane Doe", 29)
+        updated_users = read_users()
+        self.assertEqual(updated_users[0][1], "Jane Doe")
+        self.assertEqual(updated_users[0][2], 29)
+
+    def test_delete_user(self):
+        create_user("Mike", 35)
+        users = read_users()
+        self.assertEqual(len(users), 1)
+        delete_user(users[0][0])
+        users_after_delete = read_users()
+        self.assertEqual(len(users_after_delete), 0)
+
+    def tearDown(self):
+        # Tutup koneksi setelah semua tes selesai
+        close_connection()
+
+if __name__ == "__main__":
+    unittest.main()

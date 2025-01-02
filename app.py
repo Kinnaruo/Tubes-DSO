@@ -1,105 +1,45 @@
-import tkinter as tk
-from tkinter import messagebox
-import os
-import json
 
-# Path to the JSON file to store the registration data
-DATA_FILE = "registrations.json"
+import sqlite3
 
-# Check if the data file exists, if not, create an empty file
-if not os.path.exists(DATA_FILE):
-    with open(DATA_FILE, 'w') as f:
-        json.dump([], f)
+# Koneksi ke database SQLite
+conn = sqlite3.connect('simple_crud.db')
+cursor = conn.cursor()
 
-def load_data():
-    with open(DATA_FILE, 'r') as f:
-        return json.load(f)
+# Membuat tabel jika belum ada
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    age INTEGER NOT NULL
+)
+''')
 
-def save_data(data):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
-
-def create_user(name, email):
-    data = load_data()
-    data.append({"name": name, "email": email})
-    save_data(data)
-    messagebox.showinfo("Success", "User registered successfully")
+def create_user(name, age):
+    cursor.execute('INSERT INTO users (name, age) VALUES (?, ?)', (name, age))
+    conn.commit()
 
 def read_users():
-    return load_data()
+    cursor.execute('SELECT * FROM users')
+    return cursor.fetchall()
 
-def update_user(old_email, new_name, new_email):
-    data = load_data()
-    for user in data:
-        if user['email'] == old_email:
-            user['name'] = new_name
-            user['email'] = new_email
-            save_data(data)
-            messagebox.showinfo("Success", "User updated successfully")
-            return
-    messagebox.showwarning("Not Found", "User not found")
+def update_user(user_id, new_name, new_age):
+    cursor.execute('UPDATE users SET name = ?, age = ? WHERE id = ?', (new_name, new_age, user_id))
+    conn.commit()
 
-def delete_user(email):
-    data = load_data()
-    data = [user for user in data if user['email'] != email]
-    save_data(data)
-    messagebox.showinfo("Success", "User deleted successfully")
+def delete_user(user_id):
+    cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    conn.commit()
 
-def show_users():
-    data = load_data()
-    user_list = "\n".join([f"Name: {user['name']}, Email: {user['email']}" for user in data])
-    messagebox.showinfo("Registered Users", user_list)
+# Jangan lupa menutup koneksi setelah selesai
+def close_connection():
+    conn.close()
 
-def submit_form():
-    name = name_entry.get()
-    email = email_entry.get()
-    if name and email:
-        create_user(name, email)
-    else:
-        messagebox.showwarning("Input Error", "Please fill in both fields.")
-
-def update_form():
-    old_email = email_entry.get()
-    new_name = name_entry.get()
-    new_email = email_entry.get()
-    if new_name and new_email:
-        update_user(old_email, new_name, new_email)
-    else:
-        messagebox.showwarning("Input Error", "Please fill in all fields.")
-
-def delete_form():
-    email = email_entry.get()
-    if email:
-        delete_user(email)
-    else:
-        messagebox.showwarning("Input Error", "Please enter the email of the user to delete.")
-
-# Set up the main UI
-app = tk.Tk()
-app.title("Registration App")
-
-name_label = tk.Label(app, text="Name:")
-name_label.grid(row=0, column=0)
-
-name_entry = tk.Entry(app)
-name_entry.grid(row=0, column=1)
-
-email_label = tk.Label(app, text="Email:")
-email_label.grid(row=1, column=0)
-
-email_entry = tk.Entry(app)
-email_entry.grid(row=1, column=1)
-
-submit_button = tk.Button(app, text="Submit", command=submit_form)
-submit_button.grid(row=2, column=0)
-
-update_button = tk.Button(app, text="Update", command=update_form)
-update_button.grid(row=2, column=1)
-
-delete_button = tk.Button(app, text="Delete", command=delete_form)
-delete_button.grid(row=3, column=0)
-
-show_button = tk.Button(app, text="Show Users", command=show_users)
-show_button.grid(row=3, column=1)
-
-app.mainloop()
+# Jika ingin menguji fungsi langsung, gunakan yang di bawah ini
+if __name__ == "__main__":
+    # Contoh penggunaan
+    create_user("Alice", 30)
+    print(read_users())
+    update_user(1, "Alice Updated", 31)
+    print(read_users())
+    delete_user(1)
+    print(read_users())
