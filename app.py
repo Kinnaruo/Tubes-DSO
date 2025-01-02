@@ -34,7 +34,7 @@ def delete_user(conn, user_id):
 def close_connection(conn):
     conn.close()
 
-# Jika ingin menguji langsung, gunakan contoh di bawah ini
+# Jika ingin menguji, gunakan contoh di bawah ini
 if __name__ == "__main__":
     conn = get_db_connection()
     create_user(conn, "Alice", 30)
