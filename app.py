@@ -1,83 +1,95 @@
 import sqlite3
+from flask import Flask, render_template, request, redirect, url_for
+
+# Initialize Flask app
+app = Flask(__name__)
 
 # Koneksi ke database SQLite
-conn = sqlite3.connect('simple_crud.db')
-cursor = conn.cursor()
+def get_db_connection():
+    conn = sqlite3.connect('simple_crud.db')
+    conn.row_factory = sqlite3.Row  # For easier access to rows as dictionaries
+    return conn
 
 # Membuat tabel jika belum ada
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    age INTEGER NOT NULL
-)
-''')
-
-def create_user(name, age):
-    cursor.execute('INSERT INTO users (name, age) VALUES (?, ?)', (name, age))
+def create_table():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        age INTEGER NOT NULL
+    )
+    ''')
     conn.commit()
-
-def read_users():
-    cursor.execute('SELECT * FROM users')
-    return cursor.fetchall()
-
-def update_user(user_id, new_name, new_age):
-    cursor.execute('UPDATE users SET name = ?, age = ? WHERE id = ?', (new_name, new_age, user_id))
-    conn.commit()
-
-def delete_user(user_id):
-    cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
-    conn.commit()
-
-def close_connection():
     conn.close()
 
-# Function to take manual input
-def input_user():
-    print("Choose an option:")
-    print("1. Create User")
-    print("2. Read Users")
-    print("3. Update User")
-    print("4. Delete User")
-    print("5. Exit")
-    
-    choice = input("Enter your choice: ")
-    
-    if choice == "1":
-        name = input("Enter name: ")
-        age = int(input("Enter age: "))
-        create_user(name, age)
-        print(f"User {name} added successfully.")
-    
-    elif choice == "2":
-        users = read_users()
-        print("Current Users:")
-        for user in users:
-            print(f"ID: {user[0]}, Name: {user[1]}, Age: {user[2]}")
-    
-    elif choice == "3":
-        user_id = int(input("Enter user ID to update: "))
-        new_name = input("Enter new name: ")
-        new_age = int(input("Enter new age: "))
-        update_user(user_id, new_name, new_age)
-        print(f"User ID {user_id} updated successfully.")
-    
-    elif choice == "4":
-        user_id = int(input("Enter user ID to delete: "))
-        delete_user(user_id)
-        print(f"User ID {user_id} deleted successfully.")
-    
-    elif choice == "5":
-        close_connection()
-        print("Exiting program.")
-        return False
-    
-    else:
-        print("Invalid choice. Please try again.")
-    
-    return True
+# CRUD Functions
+def create_user(name, age):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('INSERT INTO users (name, age) VALUES (?, ?)', (name, age))
+    conn.commit()
+    conn.close()
 
-if __name__ == "__main__":
-    while True:
-        if not input_user():
-            break
+def read_users():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM users')
+    users = cursor.fetchall()
+    conn.close()
+    return users
+
+def update_user(user_id, new_name, new_age):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('UPDATE users SET name = ?, age = ? WHERE id = ?', (new_name, new_age, user_id))
+    conn.commit()
+    conn.close()
+
+def delete_user(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+
+# Routes for web UI
+@app.route('/')
+def index():
+    users = read_users()
+    return render_template('index.html', users=users)
+
+@app.route('/add', methods=['GET', 'POST'])
+def add_user():
+    if request.method == 'POST':
+        name = request.form['name']
+        age = int(request.form['age'])
+        create_user(name, age)
+        return redirect(url_for('index'))
+    return render_template('add_user.html')
+
+@app.route('/edit/<int:id>', methods=['GET', 'POST'])
+def edit_user(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM users WHERE id = ?', (id,))
+    user = cursor.fetchone()
+    conn.close()
+
+    if request.method == 'POST':
+        name = request.form['name']
+        age = int(request.form['age'])
+        update_user(id, name, age)
+        return redirect(url_for('index'))
+
+    return render_template('edit_user.html', user=user)
+
+@app.route('/delete/<int:id>', methods=['GET', 'POST'])
+def delete(id):
+    delete_user(id)
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    create_table()  # Create the table if not exists
+    app.run(debug=True)
