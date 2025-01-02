@@ -1,4 +1,3 @@
-
 import sqlite3
 
 # Koneksi ke database SQLite
@@ -30,16 +29,55 @@ def delete_user(user_id):
     cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
     conn.commit()
 
-# Jangan lupa menutup koneksi setelah selesai
 def close_connection():
     conn.close()
 
-# Jika ingin menguji fungsi langsung, gunakan yang di bawah ini
+# Function to take manual input
+def input_user():
+    print("Choose an option:")
+    print("1. Create User")
+    print("2. Read Users")
+    print("3. Update User")
+    print("4. Delete User")
+    print("5. Exit")
+    
+    choice = input("Enter your choice: ")
+    
+    if choice == "1":
+        name = input("Enter name: ")
+        age = int(input("Enter age: "))
+        create_user(name, age)
+        print(f"User {name} added successfully.")
+    
+    elif choice == "2":
+        users = read_users()
+        print("Current Users:")
+        for user in users:
+            print(f"ID: {user[0]}, Name: {user[1]}, Age: {user[2]}")
+    
+    elif choice == "3":
+        user_id = int(input("Enter user ID to update: "))
+        new_name = input("Enter new name: ")
+        new_age = int(input("Enter new age: "))
+        update_user(user_id, new_name, new_age)
+        print(f"User ID {user_id} updated successfully.")
+    
+    elif choice == "4":
+        user_id = int(input("Enter user ID to delete: "))
+        delete_user(user_id)
+        print(f"User ID {user_id} deleted successfully.")
+    
+    elif choice == "5":
+        close_connection()
+        print("Exiting program.")
+        return False
+    
+    else:
+        print("Invalid choice. Please try again.")
+    
+    return True
+
 if __name__ == "__main__":
-    # Contoh penggunaan
-    create_user("Alice", 30)
-    print(read_users())
-    update_user(1, "Alice Updated", 31)
-    print(read_users())
-    delete_user(1)
-    print(read_users())
+    while True:
+        if not input_user():
+            break
