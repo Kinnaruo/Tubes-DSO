@@ -1,5 +1,5 @@
 import unittest
-from app import create_user, read_users, update_user, delete_user, close_connection
+from app import create_user, read_users, update_user, delete_user
 import sqlite3
 
 class TestCRUD(unittest.TestCase):
@@ -39,7 +39,7 @@ class TestCRUD(unittest.TestCase):
         self.assertEqual(len(users_after_delete), 0)
 
     def tearDown(self):
-        # Tutup koneksi setelah semua tes selesai
+        # Close the connection after tests are done
         self.conn.close()
 
 if __name__ == "__main__":
