@@ -1,10 +1,14 @@
-
 import unittest
 from app import create_user, read_users, update_user, delete_user, close_connection
+import sqlite3
 
 class TestCRUD(unittest.TestCase):
 
     def setUp(self):
+        # Establish a fresh connection before each test
+        self.conn = sqlite3.connect('simple_crud.db')
+        self.cursor = self.conn.cursor()
+
         # Membersihkan semua data sebelum setiap tes
         users = read_users()
         for user in users:
@@ -36,7 +40,7 @@ class TestCRUD(unittest.TestCase):
 
     def tearDown(self):
         # Tutup koneksi setelah semua tes selesai
-        close_connection()
+        self.conn.close()
 
 if __name__ == "__main__":
     unittest.main()
