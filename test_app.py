@@ -1,42 +1,47 @@
-
 import unittest
-from app import create_user, read_users, update_user, delete_user, close_connection
+from app import get_db_connection, create_user, read_users, update_user, delete_user, close_connection
 
 class TestCRUD(unittest.TestCase):
 
     def setUp(self):
-        # Membersihkan semua data sebelum setiap tes
-        users = read_users()
-        for user in users:
-            delete_user(user[0])
-
-    def test_create_user(self):
-        create_user("John", 25)
-        users = read_users()
-        self.assertEqual(len(users), 1)
-        self.assertEqual(users[0][1], "John")
-        self.assertEqual(users[0][2], 25)
-
-    def test_update_user(self):
-        create_user("Jane", 28)
-        users = read_users()
-        user_id = users[0][0]
-        update_user(user_id, "Jane Doe", 29)
-        updated_users = read_users()
-        self.assertEqual(updated_users[0][1], "Jane Doe")
-        self.assertEqual(updated_users[0][2], 29)
-
-    def test_delete_user(self):
-        create_user("Mike", 35)
-        users = read_users()
-        self.assertEqual(len(users), 1)
-        delete_user(users[0][0])
-        users_after_delete = read_users()
-        self.assertEqual(len(users_after_delete), 0)
+        # Membuka koneksi database untuk setiap uji coba
+        self.conn = get_db_connection()
+        # Membuat tabel users sebelum uji coba
+        cursor = self.conn.cursor()
+        cursor.execute('''CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            age INTEGER NOT NULL
+        )''')
+        self.conn.commit()
 
     def tearDown(self):
-        # Tutup koneksi setelah semua tes selesai
-        close_connection()
+        # Membersihkan database dengan menghapus tabel users
+        cursor = self.conn.cursor()
+        cursor.execute('DROP TABLE IF EXISTS users')
+        self.conn.commit()
+        # Menutup koneksi database setelah setiap uji coba
+        close_connection(self.conn)
+
+    def test_create_user(self):
+        create_user(self.conn, "Alice", 30)
+        users = read_users(self.conn)
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0]['name'], "Alice")
+        self.assertEqual(users[0]['age'], 30)
+
+    def test_update_user(self):
+        create_user(self.conn, "Alice", 30)
+        update_user(self.conn, 1, "Alice Updated", 31)
+        users = read_users(self.conn)
+        self.assertEqual(users[0]['name'], "Alice Updated")
+        self.assertEqual(users[0]['age'], 31)
+
+    def test_delete_user(self):
+        create_user(self.conn, "Alice", 30)
+        delete_user(self.conn, 1)
+        users = read_users(self.conn)
+        self.assertEqual(len(users), 0)
 
 if __name__ == "__main__":
     unittest.main()
