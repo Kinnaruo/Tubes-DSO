@@ -4,6 +4,23 @@ from flask import Flask, render_template, request, redirect, url_for
 # Initialize Flask app
 app = Flask(__name__)
 
+# Nambahin header yang missing
+@app.after_request
+def apply_security_headers(response):
+    # Content Security Policy (CSP)
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self';"
+    
+    # Anti-clickjacking Header
+    response.headers['X-Frame-Options'] = 'DENY'
+    
+    # X-Content-Type-Options Header
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    
+    # Remove the "Server" HTTP response header to prevent server information leakage
+    response.headers['Server'] = 'Flask'
+    
+    return response
+
 # Koneksi ke database SQLite
 def get_db_connection():
     conn = sqlite3.connect('simple_crud.db')
@@ -92,4 +109,4 @@ def delete(id):
 
 if __name__ == '__main__':
     create_table()  # Create the table if not exists
-    app.run(debug=True)
+    app.run(debug=False) # Biar kalau ada error gak muncul pesan debugging
